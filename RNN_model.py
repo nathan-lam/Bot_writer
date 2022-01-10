@@ -6,6 +6,7 @@ from make_dataset import vocab
 vocab_size = len(vocab)
 
 # The embedding dimension
+# the number of factors for the model to find
 embedding_dim = 256
 
 # Number of RNN units
@@ -15,10 +16,13 @@ rnn_units = 1024
 class RNN(tf.keras.Model):
   def __init__(self, vocab_size, embedding_dim, rnn_units):
     super().__init__(self)
+    # embedding: vocabs -> embedding space
     self.embedding = tf.keras.layers.Embedding(vocab_size, embedding_dim)
+    # gru: 1 GRU layer
     self.gru = tf.keras.layers.GRU(rnn_units,
                                    return_sequences=True,
                                    return_state=True)
+    # output layer
     self.dense = tf.keras.layers.Dense(vocab_size)
 
   def call(self, inputs, states=None, return_state=False, training=False):
@@ -26,7 +30,9 @@ class RNN(tf.keras.Model):
     x = self.embedding(x, training=training)
     if states is None:
       states = self.gru.get_initial_state(x)
+    # input -> gru layer
     x, states = self.gru(x, initial_state=states, training=training)
+    # gru -> output layer
     x = self.dense(x, training=training)
 
     if return_state:
@@ -65,6 +71,7 @@ class OneStep(tf.keras.Model):
     # Convert strings to token IDs.
     input_chars = tf.strings.unicode_split(inputs, 'UTF-8')
     input_ids = self.ids_from_chars(input_chars).to_tensor()
+    print(input_ids.shape)
 
     # Run the model.
     # predicted_logits.shape is [batch, char, next_char_logits]
